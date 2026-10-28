@@ -13,6 +13,11 @@ extern "C" {
 #include <ngx_http.h>
 #include <ngx_conf_file.h>
 
+/* ngx_http_null_variable was added in nginx 1.13.4 */
+#ifndef ngx_http_null_variable
+#define ngx_http_null_variable { ngx_null_string, NULL, NULL, 0, 0, 0 }
+#endif
+
 extern ngx_module_t otel_ngx_module;
 }
 
