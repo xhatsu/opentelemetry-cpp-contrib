@@ -1,0 +1,26 @@
+--- a/src/otel_ngx_module.cpp	2026-10-25 21:59:08.208065086 +0000
++++ b/src/otel_ngx_module.cpp	2026-10-25 21:59:08.241065394 +0000
+@@ -693,9 +693,22 @@
+   return NGX_OK;
+ }
+ 
++static void OtelMainConfCleanup(void* data) {
++  // the config pool is freed with its cycle (old cycles after every reload): run the destructor so the
++  // std::string members (endpoint, service name, sampler) do not leak in the master on each reload
++  ((OtelMainConf*)data)->~OtelMainConf();
++}
++
+ static void* CreateOtelMainConf(ngx_conf_t* conf) {
+-  OtelMainConf* mainConf = (OtelMainConf*)ngx_pcalloc(conf->pool, sizeof(OtelMainConf));
++  ngx_pool_cleanup_t* cleanup = ngx_pool_cleanup_add(conf->pool, sizeof(OtelMainConf));
++  if (cleanup == nullptr) {
++    return nullptr;
++  }
++
++  OtelMainConf* mainConf = (OtelMainConf*)cleanup->data;
++  ngx_memzero(mainConf, sizeof(OtelMainConf));
+   new (mainConf) OtelMainConf();
++  cleanup->handler = OtelMainConfCleanup;
+ 
+   return mainConf;
+ }

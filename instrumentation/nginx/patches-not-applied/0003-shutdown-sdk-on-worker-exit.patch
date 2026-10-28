@@ -1,0 +1,31 @@
+--- a/src/otel_ngx_module.cpp
++++ b/src/otel_ngx_module.cpp
+@@ -1388,6 +1388,19 @@
+   return NGX_OK;
+ }
+ 
++// Shut the SDK down while the worker is still intact. Left to the static destructors that run when
++// nginx dlcloses the module, the exporter thread can still be exporting (collector slow or down)
++// after the SDK's internal log handler was destroyed, and the worker crashes on exit (signal 11).
++// Shutdown() also exports the spans still queued, so a graceful reload or quit does not drop them.
++static void OtelNgxExit(ngx_cycle_t*) {
++  auto provider = opentelemetry::trace::Provider::GetTracerProvider();
++  auto sdkProvider = dynamic_cast<sdktrace::TracerProvider*>(provider.get());
++
++  if (sdkProvider) {
++    sdkProvider->Shutdown();
++  }
++}
++
+ ngx_module_t otel_ngx_module = {
+   NGX_MODULE_V1,
+   &otel_ngx_http_module,
+@@ -1398,7 +1411,7 @@
+   OtelNgxStart, /* init process - worker process fork */
+   nullptr,      /* init thread */
+   nullptr,      /* exit thread */
+-  nullptr,      /* exit process - worker process exit */
++  OtelNgxExit,  /* exit process - worker process exit */
+   nullptr,      /* exit master */
+   NGX_MODULE_V1_PADDING,
+ };
