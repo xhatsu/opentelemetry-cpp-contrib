@@ -40,6 +40,6 @@ services:
     ports:
       - "3500:3500"
   php-backend:
-    image: php:8.5.12-fpm@sha256:f665ad19c093eee54db3a03c89102d6828b1bbf4f327689e5947a8686c6585a1
+    image: php:8.5.12-fpm@sha256:f49965c6e6a237eb3b27a6fc565e167839dc8abc65ee0652af0078f6ecdf4bbd
     volumes:
       - ${TEST_ROOT:-.}/backend/php/:/var/www/html/php
